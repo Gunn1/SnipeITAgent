@@ -5,11 +5,18 @@ import uuid
 import subprocess
 import requests
 import json
+from dotenv import load_dotenv
 import os
 
+# Load .env
+load_dotenv()
+
+# Read env vars
+SNIPEIT_API_URL = os.getenv("SNIPEIT_API_URL")
+API_KEY         = os.getenv("SNIPEIT_API_KEY")
+
+
 # ----------------- CONFIG -----------------
-SNIPEIT_API_URL = "https://REDACTED-INVENTORY-URL"
-API_KEY = "REDACTED_API_KEY"
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
     "Accept": "application/json",
@@ -156,10 +163,4 @@ def main():
         create_or_update_asset(asset_data)
 
 if __name__ == "__main__":
-    hostname = get_hostname()
-    os_info = get_os()
-    user = get_user()
-    serial = get_serial_number()
-    model = get_model_name()
-    print(f"Detected device:\n - Hostname: {hostname}\n - Serial: {serial}\n - OS: {os_info}\n - User: {user}\n - Model: {model}")
     main()
