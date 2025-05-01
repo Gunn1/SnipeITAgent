@@ -8,8 +8,8 @@ import json
 import os
 
 # ----------------- CONFIG -----------------
-SNIPEIT_API_URL = "https://your-snipeit-instance/api/v1"
-API_KEY = "your_api_key_here"
+SNIPEIT_API_URL = "https://REDACTED-INVENTORY-URL"
+API_KEY = "REDACTED_API_KEY"
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
     "Accept": "application/json",
@@ -71,6 +71,35 @@ def get_serial_number():
     except Exception as e:
         return f"ERROR-{uuid.getnode()}"
     return "UNKNOWN"
+def find_model(model_name):
+    url  = f"{SNIPEIT_API_URL}/models?search={model_name}"
+    resp = requests.get(url, headers=HEADERS)
+    resp.raise_for_status()
+    rows = resp.json().get("rows", [])
+    return rows[0] if rows else None
+
+def create_model(model_name):
+    url     = f"{SNIPEIT_API_URL}/models"
+    payload = {"name": model_name}
+    resp    = requests.post(url, headers=HEADERS, json=payload)
+    resp.raise_for_status()
+    new = resp.json().get("payload")
+    if not new or "id" not in new:
+        print(f"[ERROR] Unexpected create_model response: {resp.json()}")
+        return None
+    return new
+
+def get_or_create_model_id(model_name):
+    model = find_model(model_name)
+    if model:
+        return model["id"]
+    print(f"[INFO] Model '{model_name}' not found. Creating it…")
+    new = create_model(model_name)
+    if not new:
+        raise RuntimeError(f"Failed to create model '{model_name}'")
+    return new["id"]
+
+
 
 def find_existing_asset(serial):
     try:
@@ -88,6 +117,7 @@ def create_or_update_asset(data, asset_id=None):
 
         if asset_id:
             url += f"/{asset_id}"
+            data.pop("serial", None)
             method = requests.put
 
         response = method(url, headers=HEADERS, data=json.dumps(data))
@@ -104,14 +134,16 @@ def main():
 
     print(f"Detected device:\n - Hostname: {hostname}\n - Serial: {serial}\n - OS: {os_info}\n - User: {user}")
 
+    model_name = get_model_name()
+    model_info = get_or_create_model_id(model_name)
     asset_data = {
         "name": hostname,
         "serial": serial,
-        "model_id": MODEL_ID,
+        "model_id": model_info,
         "status_id": STATUS_ID,
         "location_id": LOCATION_ID,
         "assigned_to": ASSIGNED_USER_ID,
-        "notes": f"OS: {os_info}, User: {user}"
+        "notes": f"Model: {model_name}, OS: {os_info}, User: {user}"
     }
 
     existing_asset = find_existing_asset(serial)
@@ -129,5 +161,5 @@ if __name__ == "__main__":
     user = get_user()
     serial = get_serial_number()
     model = get_model_name()
-    print(f"Detected device:\n - Hostname: {hostname}\n - Serial: {serial}\n - OS: {os_info}\n - User: {user}\n Model: {model}")
-    # main()
+    print(f"Detected device:\n - Hostname: {hostname}\n - Serial: {serial}\n - OS: {os_info}\n - User: {user}\n - Model: {model}")
+    main()
