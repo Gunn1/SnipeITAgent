@@ -145,11 +145,10 @@ def main():
     model_info = get_or_create_model_id(model_name)
     asset_data = {
         "name": hostname,
+        "asset_tag": serial,
         "serial": serial,
         "model_id": model_info,
         "status_id": STATUS_ID,
-        "location_id": LOCATION_ID,
-        "assigned_to": ASSIGNED_USER_ID,
         "notes": f"Model: {model_name}, OS: {os_info}, User: {user}"
     }
 
